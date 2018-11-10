@@ -2,6 +2,8 @@
   "name": "sketches",
   "projects": [
     "circles",
-    "circles"
+    "circles",
+    "lines",
+    "wuerfel"
   ]
 }
