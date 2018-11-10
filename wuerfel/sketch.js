@@ -19,11 +19,21 @@ const S = 300;
 const RATIO = 0.5;
 const CENTER_X = W * S * 0.5;
 const CENTER_Y = H * S * 0.5;
+const DURATION = 1000;
 
+function easeInOutQuart(t) {
+  return t < .5 ? 8 * t * t * t * t : 1 - 8 * (--t) * t * t * t;
+}
+
+function tween(offset = 0) {
+  const current = millis();
+  const t = ((current + offset) % DURATION) / DURATION;
+  return easeInOutQuart(t);
+}
 
 function drawCube() {
   noStroke();
-  rotateY(frameCount);
+  rotateY(360 * tween(random(0, 500)));
   faces.forEach(face => {
 	  fill(`rgba(${face[3]}, ${transparency})`);
     push();
@@ -35,6 +45,7 @@ function drawCube() {
 }
 
 function drawCubes() {
+  randomSeed(42);
   for (let i = 0; i < W; i++) {
     for (let j = 0; j < H; j++) {
       push();
@@ -53,7 +64,7 @@ function setup() {
 
 function draw() {
   background('lightblue');
-  scale(RATIO);
+  scale(0.1);
   translate(-CENTER_X, -CENTER_Y);
   push();
   drawCubes();
