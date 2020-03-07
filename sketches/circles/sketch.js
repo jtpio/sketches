@@ -5,8 +5,7 @@ const SCALE = 16 / 9 / 1000;
 
 let a = MAX;
 let x = 100;
-let off = 0.5;
-
+let off = 0.1;
 let ratio;
 
 function setup() {
@@ -34,7 +33,7 @@ function makeCircle(s) {
   strokeWeight(s);
   stroke(255);
   noFill();
-  let r = R * (0.25 + off * 2);
+  const r = R * (0.25 + off * 2);
   ellipse(0, 0, r, r);
 }
 
@@ -47,6 +46,14 @@ function mouseReleased() {
 }
 
 function draw() {
+  if (touches.length > 0) {
+    return;
+  }
+
+  if (frameCount % 300 === 0) {
+    keyPressed();
+  }
+
   a *= 0.95;
   const b = easeInOutCubic(a / MAX) * MAX;
   const c = color(b, b, b, 50);
