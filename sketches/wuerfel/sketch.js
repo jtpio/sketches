@@ -35,11 +35,11 @@ function drawCube() {
   noStroke();
   rotateY(360 * tween(random(0, 500)));
   faces.forEach(face => {
-	  fill(`rgba(${face[3]}, ${transparency})`);
+    fill(`rgba(${face[3]}, ${transparency})`);
     push();
     [rotateX, rotateY, rotateZ].forEach((fn, i) => fn(face[i]));
     translate(0, 0,90);
-	  plane(edgeLength);
+    plane(edgeLength);
     pop();
   });
 }
