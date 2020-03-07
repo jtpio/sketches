@@ -12,8 +12,7 @@ const RADIUS = 100;
 const TWEEN_DURATION = 2000;
 const SCALE = (16 / 9) / 1000;
 
-let fps = 0;
-let cx, cy, ratio;
+let ratio;
 
 // from: https://gist.github.com/gre/1650294
 const easeInOutQuad = t => t<.5 ? 2*t*t : -1+(4-2*t)*t;
