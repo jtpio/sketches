@@ -1,4 +1,4 @@
-/// <reference path="../libraries/global.d.ts" />
+/// <reference path="../../lib/global.d.ts" />
 
 const faces = [
   [0, -90, 0, '255, 0, 0'],
