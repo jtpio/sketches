@@ -6,8 +6,10 @@ const COLORS = ["#ffffff", "#494949", "#7c7a7a", "#ff5b5b"];
 const SCALE = 16 / 9 / 1000;
 
 let keys = [];
-let transition = { value: 0 };
-let target = { value: 0 };
+let transition = { value: 1 };
+let target = { value: 1 };
+let flashEffect = { value: 1 };
+let offset = 0;
 let ratio, tween;
 
 
@@ -24,11 +26,17 @@ function setup() {
   fft = new p5.FFT();
   amplitude = new p5.Amplitude();
   amplitude.setInput(sound);
-  sound.loop();
+  peakDetect = new p5.PeakDetect();
 
   tween = new TWEEN.Tween(transition)
-        .to(target, 250)
+        .to(target, 100)
         .easing(TWEEN.Easing.Quadratic.Out);
+
+  flash = new TWEEN.Tween(flashEffect)
+        .to({ value: 0 }, 250)
+        .easing(TWEEN.Easing.Quadratic.In);
+
+  sound.loop();
 }
 
 function windowResized() {
@@ -38,15 +46,24 @@ function windowResized() {
 
 function draw() {
   const current = millis();
-  const theta = current * ROTATION_SPEED;
+  const bg = 100 * flashEffect.value;
 
-  background(0);
+  offset += flashEffect.value / 200;
+  const theta = current * ROTATION_SPEED + offset;
+
+  background(bg);
   randomSeed(0);
   TWEEN.update();
 
   const spectrum = fft.analyze();
   const energy = fft.getEnergy("bass", "highMid");
-  // const level = amplitude.getLevel();
+  const jitter = amplitude.getLevel();
+  peakDetect.update(fft);
+
+  if (peakDetect.isDetected) {
+    flashEffect.value = 1;
+    flash.stop().start();
+  }
 
   // debug
   // noStroke();
@@ -63,15 +80,16 @@ function draw() {
   rotate(theta);
   scale(ratio);
 
-  const level = transition.value;
+  const baseLevel = transition.value * 0.1;
+  const level = baseLevel + 1;
 
   for (let i = 0; i < N; i++) {
     const offset = theta;
     const angle = random([-2, 1]) * offset * random() * i + (i * N) / 2;
-    const radius = (RADIUS / N) * i * 3 * S + level * 100;
-    const len = random() + 0.5;
-    const weight = (0.05 * RADIUS * S * i) / N;
+    const radius = level * ((RADIUS / N) * i + jitter * 20);
+    const weight = (0.05 * RADIUS * S * i) / N + level ** 2;
     const color = COLORS[i % COLORS.length];
+    const len = random() + 0.5;
 
     push();
     rotate(angle);
@@ -89,23 +107,25 @@ function getLastInputNumber() {
 
 function keyPressed() {
   const k = parseInt(key, 10);
-  if (k) {
-    tween.stop();
-    keys.push(k);
-    target.value = k / 2;
-    tween.start();
+  if (!k) {
+    return true;
   }
+  tween.stop();
+  keys.push(k);
+  target.value = k;
+  tween.start();
   return false;
 }
 
 function keyReleased() {
   const k = parseInt(key, 10);
-  if (keys.indexOf(k) > -1) {
-    keys = keys.filter(v => v !== k);
-    tween.stop();
-    const lastKey = keys[keys.length - 1] || 1;
-    target.value = lastKey / 2;
-    tween.start();
+  if (keys.indexOf(k) === -1) {
+    return true;
   }
+  keys = keys.filter(v => v !== k);
+  tween.stop();
+  const lastKey = keys[keys.length - 1] || 1;
+  target.value = lastKey;
+  tween.start();
   return false;
 }
