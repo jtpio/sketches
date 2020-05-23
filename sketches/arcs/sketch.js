@@ -19,10 +19,10 @@ let slowMotion = false;
 let dot = true;
 let currentEffect = 0;
 
-let current, ratio, tween;
+let current, ratio, tween, effects;
 
 function preload(){
-  sound = loadSound("./track.mp3");
+  sound = loadSound("./loop.wav");
 }
 
 function setup() {
@@ -70,7 +70,7 @@ function windowResized() {
 }
 
 function bg() {
-  return 100 * flashEffect.value;
+  return 50 * flashEffect.value;
 }
 
 
@@ -88,7 +88,7 @@ function halfSquare(r) {
   pop();
 }
 
-function redSquares() {
+function squares() {
   const radius = RADIUS / 4;
   const r = radius * pool[0].value;
   if (r < 5) {
@@ -126,8 +126,58 @@ function redSquares() {
 
 }
 
+function redCross(r) {
+  beginShape();
+  vertex(-1.5*r, -0.5*r);
+  vertex(-0.5*r, -0.5*r);
+  vertex(-0.5*r, -1.5*r);
+  vertex(0.5*r, -1.5*r);
+  vertex(0.5*r, -0.5*r);
+  vertex(1.5*r, -0.5*r);
+  vertex(1.5*r, 0.5*r);
+  vertex(0.5*r, 0.5*r);
+  vertex(0.5*r, 1.5*r);
+  vertex(-0.5*r, 1.5*r);
+  vertex(-0.5*r, 0.5*r);
+  vertex(-1.5*r, 0.5*r);
+  endShape(CLOSE);
+}
+
+function crosses() {
+  const a = pool[4].value;
+  const b = pool[5].value;
+  const r = RADIUS * 0.5 * b + RADIUS * 0.1;
+  if (r < 10) {
+    return;
+  }
+
+  const angle = a * QUARTER_PI;
+  randomSeed();
+
+  // big cross
+  push();
+  noFill();
+  stroke(255, 0, 0);
+  strokeWeight(4);
+  rotate(random([-1, 1]) * angle);
+  redCross(r);
+  pop();
+
+  const sr = RADIUS * 0.25 * b;
+  if (sr < 10) {
+    return;
+  }
+  // small cross
+  push();
+  noStroke();
+  fill(255, 0, 0);
+  rotate(random([-1, -1]) * angle);
+  redCross(sr);
+  pop();
+}
+
 function lines() {
-  const c = color(255, 55 + flashEffect.value * 100);
+  const c = color(255, 55 + flashEffect.value * 150);
   const c2 = 255;
   const height = RADIUS;
   const jitter = amplitude.getLevel() * 2;
@@ -217,14 +267,22 @@ function draw() {
   scale(ratio);
   randomSeed(0);
 
-  const effects = [redSquares, lines, arcs];
+  effects = [crosses, lines, squares, arcs];
   effects[currentEffect % effects.length]();
   // noLoop();
 }
 
+function switchEffect(dir=1) {
+  currentEffect = (currentEffect + effects.length + dir) % effects.length;
+}
+
 function keyPressed() {
+  if (keyCode === LEFT_ARROW) {
+    switchEffect(-1);
+    return true;
+  }
   if (keyCode === RIGHT_ARROW) {
-    currentEffect++;
+    switchEffect(1);
     return true;
   }
   if (keyCode === 32) {
