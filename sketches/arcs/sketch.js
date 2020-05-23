@@ -1,18 +1,21 @@
 const RADIUS = 300;
 const ROTATION_SPEED = 0.0001;
 const S = 0.5;
-const N = 30;
+const N_ARCS = 30;
+const N_LINES = 10;
 const COLORS = ["#ffffff", "#494949", "#7c7a7a", "#ff5b5b"];
 const SCALE = 16 / 9 / 1000;
 
 let keys = [];
 let transition = { value: 1 };
 let lineAngle = { value: 0 };
+let lineLengths = [];
 let lineDirection = 1;
 let target = { value: 1 };
 let flashEffect = { value: 1 };
 let offset = 0;
 let slowMotion = false;
+let dot = true;
 
 let current, ratio, tween;
 
@@ -24,6 +27,7 @@ function setup() {
   createCanvas(innerWidth, innerHeight);
   strokeCap(SQUARE);
   ellipseMode(CENTER);
+  rectMode(CENTER);
   smooth();
   noFill();
   windowResized();
@@ -44,6 +48,18 @@ function setup() {
         .to({ value: 0 }, 250)
         .easing(TWEEN.Easing.Quadratic.In);
 
+  randomSeed(0);
+  for (let i = 0; i < N_LINES; i++) {
+    lineLengths.push({ value: 0 });
+    new TWEEN.Tween(lineLengths[i])
+          .to({ value: 1 }, 750)
+          .yoyo(true)
+          .repeat(Infinity)
+          .delay(random(1000))
+          .easing(TWEEN.Easing.Exponential.InOut)
+          .start();
+  }
+
   sound.loop();
 }
 
@@ -57,31 +73,39 @@ function bg() {
 }
 
 function lines() {
-  const n = 10;
   const c = color(255, 55 + flashEffect.value * 100);
   const c2 = 255;
   const height = RADIUS;
   const jitter = amplitude.getLevel() * 2;
   const radius = (flashEffect.value + 1) * 5;
-  const space = 2 * height / n;
+  const space = 2 * height / N_LINES;
 
   push();
   rotate(lineAngle.value * lineDirection);
   translate(-height, 0);
   strokeWeight(2 + jitter);
-  fill(c2);
 
-  for (let i = 1; i < n; i++) {
-    const phase = random(10);
+  for (let i = 1; i < N_LINES; i++) {
+    // const factor = lineLengths[i].value;
+    const factor = sin(current * 0.002 + random(N_LINES));
     const x1 = i * space;
-    const y1 = - height * sin(current * 0.002 + phase);
+    const y1 = - height * factor;
     const x2 = x1;
     const y2 = -y1;
     stroke(c);
     line(x1, y1, x2, y2);
-    noStroke();
-    ellipse(x1, y1, radius);
-    ellipse(x2, y2, radius);
+
+    if (dot) {
+      noStroke();
+      fill(c2);
+      ellipse(x1, y1, radius);
+      ellipse(x2, y2, radius);
+    } else {
+      fill(bg());
+      stroke(c2);
+      rect(x1, y1, radius * 2);
+      rect(x2, y2, radius * 2);
+    }
   }
   pop();
 }
@@ -101,11 +125,11 @@ function arcs() {
   rotate(theta);
 
 
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < N_ARCS; i++) {
     const offset = theta;
-    const angle = random([-2, 1]) * offset * random() * i + (i * N) / 2;
-    const radius = baseRadius * i / N + jitter * 20;
-    const weight = (0.05 * RADIUS * S * i) / N + level ** 2;
+    const angle = random([-2, 1]) * offset * random() * i + (i * N_ARCS) / 2;
+    const radius = baseRadius * i / N_ARCS + jitter * 20;
+    const weight = (0.05 * RADIUS * S * i) / N_ARCS + level ** 2;
     const color = COLORS[i % COLORS.length];
     const len = random() + 0.5;
 
@@ -124,7 +148,7 @@ function draw() {
   // update globals
   TWEEN.update();
   current = millis() * slow;
-  offset += flashEffect.value / 200;
+  offset += slowMotion ? 0 : flashEffect.value / 200;
   fft.analyze();
   peakDetect.update(fft);
   if (peakDetect.isDetected) {
@@ -146,6 +170,10 @@ function draw() {
 function keyPressed() {
   if (keyCode === 32) {
     slowMotion = !slowMotion;
+    return false;
+  }
+  if (key === 's') {
+    dot = !dot;
     return false;
   }
   if (key === 'e' && !rot.isPlaying()) {
