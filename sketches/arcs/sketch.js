@@ -8,12 +8,13 @@ const SCALE = 16 / 9 / 1000;
 let keys = [];
 let transition = { value: 1 };
 let lineAngle = { value: 0 };
+let lineDirection = 1;
 let target = { value: 1 };
 let flashEffect = { value: 1 };
 let offset = 0;
+let slowMotion = false;
 
 let current, ratio, tween;
-
 
 function preload(){
   sound = loadSound("./loop.wav");
@@ -51,7 +52,7 @@ function windowResized() {
   resizeCanvas(innerWidth, innerHeight);
 }
 
-function back() {
+function bg() {
   return 100 * flashEffect.value;
 }
 
@@ -64,7 +65,7 @@ function lines() {
   const jitter = amplitude.getLevel() * 2;
 
   push();
-  rotate(lineAngle.value);
+  rotate(lineAngle.value * lineDirection);
   translate(-height, 0);
   strokeWeight(2 + jitter);
   fill(c2);
@@ -87,20 +88,23 @@ function lines() {
 
 function arcs() {
   const theta = current * ROTATION_SPEED + offset;
-  push();
-  fill(back());
-  circle(0, 0, RADIUS);
-  noFill()
-  rotate(theta);
-
   const jitter = amplitude.getLevel();
   const baseLevel = transition.value * 0.1;
   const level = baseLevel + 1;
+  const baseRadius = RADIUS * level;
+
+  push();
+  fill(bg());
+  noStroke();
+  circle(0, 0, baseRadius);
+  noFill()
+  rotate(theta);
+
 
   for (let i = 0; i < N; i++) {
     const offset = theta;
     const angle = random([-2, 1]) * offset * random() * i + (i * N) / 2;
-    const radius = level * ((RADIUS / N) * i + jitter * 20);
+    const radius = baseRadius * i / N + jitter * 20;
     const weight = (0.05 * RADIUS * S * i) / N + level ** 2;
     const color = COLORS[i % COLORS.length];
     const len = random() + 0.5;
@@ -116,9 +120,10 @@ function arcs() {
 }
 
 function draw() {
+  const slow = slowMotion ? 0.1 : 1
   // update globals
   TWEEN.update();
-  current = millis();
+  current = millis() * slow;
   offset += flashEffect.value / 200;
   fft.analyze();
   peakDetect.update(fft);
@@ -128,7 +133,7 @@ function draw() {
   }
 
   // prepare the scene
-  background(back());
+  background(bg());
   translate(innerWidth / 2, innerHeight / 2);
   scale(ratio);
   randomSeed(0);
@@ -139,8 +144,18 @@ function draw() {
 }
 
 function keyPressed() {
-  if (key === 'r') {
-    rot.stop().start();
+  if (keyCode === 32) {
+    slowMotion = !slowMotion;
+    return false;
+  }
+  if (key === 'e' && !rot.isPlaying()) {
+    lineDirection = -1;
+    rot.start();
+    return false;
+  }
+  if (key === 'r' && !rot.isPlaying()) {
+    lineDirection = 1;
+    rot.start();
     return false;
   }
   const k = parseInt(key, 10);
