@@ -5,27 +5,28 @@ const N_ARCS = 30;
 const N_LINES = 10;
 const COLORS = ["#ffffff", "#494949", "#7c7a7a", "#ff5b5b"];
 const SCALE = 16 / 9 / 1000;
+const SQRT_2 = 2 ** 0.5;
 
 let keys = [];
 let transition = { value: 1 };
 let lineAngle = { value: 0 };
-let lineLengths = [];
+let pool = [];
 let lineDirection = 1;
 let target = { value: 1 };
 let flashEffect = { value: 1 };
 let offset = 0;
 let slowMotion = false;
 let dot = true;
+let currentEffect = 0;
 
 let current, ratio, tween;
 
 function preload(){
-  sound = loadSound("./loop.wav");
+  sound = loadSound("./track.mp3");
 }
 
 function setup() {
   createCanvas(innerWidth, innerHeight);
-  strokeCap(SQUARE);
   ellipseMode(CENTER);
   rectMode(CENTER);
   smooth();
@@ -50,13 +51,13 @@ function setup() {
 
   randomSeed(0);
   for (let i = 0; i < N_LINES; i++) {
-    lineLengths.push({ value: 0 });
-    new TWEEN.Tween(lineLengths[i])
-          .to({ value: 1 }, 750)
-          .yoyo(true)
+    pool.push({ value: 0 });
+    new TWEEN.Tween(pool[i])
+          .to({ value: 1 }, 250)
           .repeat(Infinity)
+          .yoyo(true)
           .delay(random(1000))
-          .easing(TWEEN.Easing.Exponential.InOut)
+          .easing(TWEEN.Easing.Quintic.In)
           .start();
   }
 
@@ -70,6 +71,59 @@ function windowResized() {
 
 function bg() {
   return 100 * flashEffect.value;
+}
+
+
+function halfSquare(r) {
+  const weight = 4;
+  strokeWeight(weight);
+
+  push();
+  fill(255, 0, 0);
+  triangle(r, 0, 0, r, -r, 0);
+  noFill();
+  rotate(PI);
+  translate(0, weight * 2);
+  triangle(r, 0, 0, r, -r, 0);
+  pop();
+}
+
+function redSquares() {
+  const radius = RADIUS / 4;
+  const r = radius * pool[0].value;
+  if (r < 5) {
+    // bail early to avoid artefacts
+    return;
+  }
+  const halfDiag = r * SQRT_2;
+
+  // red color for the fill and stoke
+  fill(255, 0, 0);
+  stroke(255, 0, 0);
+  strokeCap(ROUND);
+
+  // 1st square in the middle
+  push();
+  rotate(QUARTER_PI);
+  rotate(pool[1].value * QUARTER_PI)
+  rect(0, 0, r, r);
+  pop();
+
+  // 2nd square to the left
+  push();
+  translate(-radius * 2.5, 0);
+  rotate(pool[2].value * QUARTER_PI)
+  halfSquare(halfDiag);
+  pop();
+
+  // 3rd square to the right
+  push();
+  translate(radius * 2.5, 0);
+  rotate(pool[3].value * QUARTER_PI)
+  rotate(PI);
+  halfSquare(halfDiag);
+  pop();
+
 }
 
 function lines() {
@@ -86,7 +140,7 @@ function lines() {
   strokeWeight(2 + jitter);
 
   for (let i = 1; i < N_LINES; i++) {
-    // const factor = lineLengths[i].value;
+    // const factor = pool[i].value;
     const factor = sin(current * 0.002 + random(N_LINES));
     const x1 = i * space;
     const y1 = - height * factor;
@@ -136,6 +190,7 @@ function arcs() {
     push();
     rotate(angle);
     stroke(color);
+    strokeCap(SQUARE);
     strokeWeight(weight);
     arc(0, 0, radius, radius, 0, len);
     pop();
@@ -162,12 +217,16 @@ function draw() {
   scale(ratio);
   randomSeed(0);
 
-  lines();
-  arcs();
+  const effects = [redSquares, lines, arcs];
+  effects[currentEffect % effects.length]();
   // noLoop();
 }
 
 function keyPressed() {
+  if (keyCode === RIGHT_ARROW) {
+    currentEffect++;
+    return true;
+  }
   if (keyCode === 32) {
     slowMotion = !slowMotion;
     return false;
