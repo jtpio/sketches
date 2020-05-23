@@ -7,10 +7,12 @@ const SCALE = 16 / 9 / 1000;
 
 let keys = [];
 let transition = { value: 1 };
+let lineAngle = { value: 0 };
 let target = { value: 1 };
 let flashEffect = { value: 1 };
 let offset = 0;
-let ratio, tween;
+
+let current, ratio, tween;
 
 
 function preload(){
@@ -20,6 +22,7 @@ function preload(){
 function setup() {
   createCanvas(innerWidth, innerHeight);
   strokeCap(SQUARE);
+  ellipseMode(CENTER);
   smooth();
   noFill();
   windowResized();
@@ -30,6 +33,10 @@ function setup() {
 
   tween = new TWEEN.Tween(transition)
         .to(target, 100)
+        .easing(TWEEN.Easing.Quadratic.Out);
+
+  rot = new TWEEN.Tween(lineAngle)
+        .to({ value: `+${HALF_PI}`}, 100)
         .easing(TWEEN.Easing.Quadratic.Out);
 
   flash = new TWEEN.Tween(flashEffect)
@@ -44,30 +51,48 @@ function windowResized() {
   resizeCanvas(innerWidth, innerHeight);
 }
 
-function draw() {
-  // update globals
-  TWEEN.update();
-  offset += flashEffect.value / 200;
-  fft.analyze();
-  peakDetect.update(fft);
-  if (peakDetect.isDetected) {
-    flashEffect.value = 1;
-    flash.stop().start();
+function back() {
+  return 100 * flashEffect.value;
+}
+
+function lines() {
+  const n = 10;
+  const c = color(255, 50);
+  const c2 = 255;
+  const height = RADIUS * ratio;
+  const space = 2 * height / n;
+  const jitter = amplitude.getLevel() * 2;
+
+  push();
+  rotate(lineAngle.value);
+  translate(-height, 0);
+  strokeWeight(2 + jitter);
+  fill(c2);
+
+  for (let i = 1; i < n; i++) {
+    const phase = random(10);
+    const radius = (flashEffect.value + 1) * 5;
+    const x1 = i * space;
+    const y1 = - height * sin(current * 0.002 + phase);
+    const x2 = x1;
+    const y2 = -y1;
+    stroke(c);
+    line(x1, y1, x2, y2);
+    noStroke();
+    ellipse(x1, y1, radius);
+    ellipse(x2, y2, radius);
   }
+  pop();
+}
 
-  // time based animation
-  const current = millis();
+function arcs() {
   const theta = current * ROTATION_SPEED + offset;
-  const bg = 100 * flashEffect.value;
-
-  // prepare the scene
-  background(bg);
-  translate(innerWidth / 2, innerHeight / 2);
+  push();
+  fill(back());
+  circle(0, 0, RADIUS);
+  noFill()
   rotate(theta);
-  scale(ratio);
-  randomSeed(0);
 
-  // draw arcs
   const jitter = amplitude.getLevel();
   const baseLevel = transition.value * 0.1;
   const level = baseLevel + 1;
@@ -87,9 +112,37 @@ function draw() {
     arc(0, 0, radius, radius, 0, len);
     pop();
   }
+  pop();
+}
+
+function draw() {
+  // update globals
+  TWEEN.update();
+  current = millis();
+  offset += flashEffect.value / 200;
+  fft.analyze();
+  peakDetect.update(fft);
+  if (peakDetect.isDetected) {
+    flashEffect.value = 1;
+    flash.stop().start();
+  }
+
+  // prepare the scene
+  background(back());
+  translate(innerWidth / 2, innerHeight / 2);
+  scale(ratio);
+  randomSeed(0);
+
+  lines();
+  arcs();
+  // noLoop();
 }
 
 function keyPressed() {
+  if (key === 'r') {
+    rot.stop().start();
+    return false;
+  }
   const k = parseInt(key, 10);
   if (!k) {
     return true;
