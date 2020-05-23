@@ -45,41 +45,30 @@ function windowResized() {
 }
 
 function draw() {
-  const current = millis();
-  const bg = 100 * flashEffect.value;
-
-  offset += flashEffect.value / 200;
-  const theta = current * ROTATION_SPEED + offset;
-
-  background(bg);
-  randomSeed(0);
+  // update globals
   TWEEN.update();
-
-  const spectrum = fft.analyze();
-  const energy = fft.getEnergy("bass", "highMid");
-  const jitter = amplitude.getLevel();
+  offset += flashEffect.value / 200;
+  fft.analyze();
   peakDetect.update(fft);
-
   if (peakDetect.isDetected) {
     flashEffect.value = 1;
     flash.stop().start();
   }
 
-  // debug
-  // noStroke();
-  // fill(255, 0, 255);
-  // for (let i = 0; i< spectrum.length; i++){
-  //   let x = map(i, 0, spectrum.length, 0, innerWidth);
-  //   let h = -innerHeight + map(spectrum[i], 0, 255, innerHeight, 0);
-  //   rect(x, innerHeight, innerWidth / spectrum.length, h )
-  // }
-  // text(kick || 'null', 20, 20);
-  // noFill();
+  // time based animation
+  const current = millis();
+  const theta = current * ROTATION_SPEED + offset;
+  const bg = 100 * flashEffect.value;
 
+  // prepare the scene
+  background(bg);
   translate(innerWidth / 2, innerHeight / 2);
   rotate(theta);
   scale(ratio);
+  randomSeed(0);
 
+  // draw arcs
+  const jitter = amplitude.getLevel();
   const baseLevel = transition.value * 0.1;
   const level = baseLevel + 1;
 
@@ -98,11 +87,6 @@ function draw() {
     arc(0, 0, radius, radius, 0, len);
     pop();
   }
-}
-
-
-function getLastInputNumber() {
-  return keys[keys.length - 1] || 1;
 }
 
 function keyPressed() {
