@@ -58,11 +58,12 @@ function bg() {
 
 function lines() {
   const n = 10;
-  const c = color(255, 50);
+  const c = color(255, 55 + flashEffect.value * 100);
   const c2 = 255;
-  const height = RADIUS * ratio;
-  const space = 2 * height / n;
+  const height = RADIUS;
   const jitter = amplitude.getLevel() * 2;
+  const radius = (flashEffect.value + 1) * 5;
+  const space = 2 * height / n;
 
   push();
   rotate(lineAngle.value * lineDirection);
@@ -72,7 +73,6 @@ function lines() {
 
   for (let i = 1; i < n; i++) {
     const phase = random(10);
-    const radius = (flashEffect.value + 1) * 5;
     const x1 = i * space;
     const y1 = - height * sin(current * 0.002 + phase);
     const x2 = x1;
