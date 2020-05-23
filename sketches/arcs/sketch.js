@@ -3,13 +3,16 @@ const ROTATION_SPEED = 0.0001;
 const S = 0.5;
 const N_ARCS = 30;
 const N_LINES = 10;
-const COLORS = ["#ffffff", "#494949", "#7c7a7a", "#ff5b5b"];
+const GREY = "#494949"
+const ORANGE = ["#df691a"];
+const COLORS = ["#ffffff", GREY, "#7c7a7a", "#ff5b5b"];
 const SCALE = 16 / 9 / 1000;
 const SQRT_2 = 2 ** 0.5;
 
 let keys = [];
 let transition = { value: 1 };
 let lineAngle = { value: 0 };
+let gridAngle = { value: 0 };
 let pool = [];
 let lineDirection = 1;
 let target = { value: 1 };
@@ -19,7 +22,7 @@ let slowMotion = false;
 let dot = true;
 let currentEffect = 0;
 
-let current, ratio, tween, effects;
+let current, ratio, tween, rot, piRot, flash, effects;
 
 function preload(){
   sound = loadSound("./loop.wav");
@@ -44,6 +47,10 @@ function setup() {
   rot = new TWEEN.Tween(lineAngle)
         .to({ value: `+${HALF_PI}`}, 100)
         .easing(TWEEN.Easing.Quadratic.Out);
+
+  piRot = new TWEEN.Tween(gridAngle)
+        .to({ value: `+${PI}`}, 100)
+        .easing(TWEEN.Easing.Quadratic.In);
 
   flash = new TWEEN.Tween(flashEffect)
         .to({ value: 0 }, 250)
@@ -248,6 +255,65 @@ function arcs() {
   pop();
 }
 
+function grid() {
+  const n = 20;
+  const r = RADIUS / 2;
+  const [startX, startY] = [-r, -r];
+  const step = 2 * r / 3;
+  const size = r / 2;
+  const selected = int(current / 100) % 16;
+  const xx = int(selected / 4);
+
+  push();
+  if (selected === 15 && !piRot.isPlaying()) {
+    piRot.start();
+  }
+  rotate(gridAngle.value);
+  randomSeed(0);
+  stroke(255);
+  strokeWeight(5);
+  strokeCap(ROUND)
+  noFill();
+
+  // TODO: make generator
+  for (let i = 0; i < 4; i++) {
+    const x = startX + i * step;
+    if (xx >= i) {
+      beginShape();
+      const diff = 4 * r / n;
+      for (let k = 0; k < n; k++) {
+        const tw = random(pool);
+        vertex(
+          -2 * r + diff * k,
+          x + transition.value * 20 * random([-1, 1]) * tw.value
+        )
+      }
+      endShape();
+    }
+  }
+
+  strokeCap(SQUARE);
+  for (let i = 0; i < 4; i++) {
+    const x = startX + i * step;
+    for (let j = 0; j < 4; j++) {
+      const y = startY + j * step;
+      push();
+      translate(x, y);
+      stroke(255, 0, 0);
+      fill(bg());
+      rect(0, 0, size, size);
+
+      if (i + j * 4 === selected) {
+        fill(255);
+        noStroke();
+        rect(0, 0, 0.9 * size, 0.9 * size);
+      }
+      pop();
+    }
+  }
+  pop();
+}
+
 function draw() {
   const slow = slowMotion ? 0.1 : 1
   // update globals
@@ -267,7 +333,7 @@ function draw() {
   scale(ratio);
   randomSeed(0);
 
-  effects = [crosses, lines, squares, arcs];
+  effects = [grid, crosses, lines, squares, arcs];
   effects[currentEffect % effects.length]();
   // noLoop();
 }
