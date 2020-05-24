@@ -16,7 +16,7 @@ let gridAngle = { value: 0 };
 let pool = [];
 let lineDirection = 1;
 let target = { value: 1 };
-let flashEffect = { value: 1 };
+let flashEffect = { value: 0 };
 let offset = 0;
 let slowMotion = false;
 let dot = true;
@@ -25,7 +25,7 @@ let currentEffect = 0;
 let current, ratio, tween, rot, piRot, flash, effects;
 
 function preload(){
-  sound = loadSound("./loop.wav");
+  sound = loadSound("./rave-128.wav");
 }
 
 function setup() {
@@ -53,7 +53,7 @@ function setup() {
         .easing(TWEEN.Easing.Quadratic.In);
 
   flash = new TWEEN.Tween(flashEffect)
-        .to({ value: 0 }, 250)
+        .to({ value: 1 }, 100)
         .easing(TWEEN.Easing.Quadratic.In);
 
   randomSeed(0);
@@ -77,7 +77,7 @@ function windowResized() {
 }
 
 function bg() {
-  return 50 * flashEffect.value;
+  return 30 * (1 - flashEffect.value);
 }
 
 
@@ -97,12 +97,7 @@ function halfSquare(r) {
 
 function squares() {
   const radius = RADIUS / 4;
-  const r = radius * pool[0].value;
-  if (r < 5) {
-    // bail early to avoid artefacts
-    return;
-  }
-  const halfDiag = r * SQRT_2;
+  let r, halfDiag;
 
   // red color for the fill and stoke
   fill(255, 0, 0);
@@ -110,26 +105,37 @@ function squares() {
   strokeCap(ROUND);
 
   // 1st square in the middle
-  push();
-  rotate(QUARTER_PI);
-  rotate(pool[1].value * QUARTER_PI)
-  rect(0, 0, r, r);
-  pop();
+  r = radius * pool[0].value;
+  if (r >= 5) {
+    push();
+    rotate(QUARTER_PI);
+    rotate(pool[1].value * QUARTER_PI)
+    rect(0, 0, r, r);
+    pop();
+  }
 
   // 2nd square to the left
-  push();
-  translate(-radius * 2.5, 0);
-  rotate(pool[2].value * QUARTER_PI)
-  halfSquare(halfDiag);
-  pop();
+  r = radius * pool[1].value;
+  if (r >= 5) {
+    halfDiag = r * SQRT_2;
+    push();
+    translate(-radius * 2.5, 0);
+    rotate(pool[2].value * QUARTER_PI)
+    halfSquare(halfDiag);
+    pop();
+  }
 
   // 3rd square to the right
-  push();
-  translate(radius * 2.5, 0);
-  rotate(pool[3].value * QUARTER_PI)
-  rotate(PI);
-  halfSquare(halfDiag);
-  pop();
+  r = radius * pool[2].value;
+  if (r >= 5) {
+    halfDiag = r * SQRT_2;
+    push();
+    translate(radius * 2.5, 0);
+    rotate(pool[3].value * QUARTER_PI)
+    rotate(PI);
+    halfSquare(halfDiag);
+    pop();
+  }
 
 }
 
@@ -153,7 +159,7 @@ function redCross(r) {
 function crosses() {
   const a = pool[4].value;
   const b = pool[5].value;
-  const r = RADIUS * 0.5 * b + RADIUS * 0.1;
+  const r = RADIUS * 0.4 * b + RADIUS * 0.1;
   if (r < 10) {
     return;
   }
@@ -167,10 +173,10 @@ function crosses() {
   stroke(255, 0, 0);
   strokeWeight(4);
   rotate(random([-1, 1]) * angle);
-  redCross(r);
+  redCross(r + flashEffect.value * 20);
   pop();
 
-  const sr = RADIUS * 0.25 * b;
+  const sr = RADIUS * 0.20 * b;
   if (sr < 10) {
     return;
   }
@@ -179,16 +185,16 @@ function crosses() {
   noStroke();
   fill(255, 0, 0);
   rotate(random([-1, -1]) * angle);
-  redCross(sr);
+  redCross(sr + flashEffect.value * 20);
   pop();
 }
 
 function lines() {
-  const c = color(255, 55 + flashEffect.value * 150);
+  const c = color(255, 55 + (1 - flashEffect.value) * 150);
   const c2 = 255;
   const height = RADIUS;
   const jitter = amplitude.getLevel() * 2;
-  const radius = (flashEffect.value + 1) * 5;
+  const radius = (flashEffect.value + 2) * 5;
   const space = 2 * height / N_LINES;
 
   push();
@@ -224,6 +230,7 @@ function lines() {
 function arcs() {
   const theta = current * ROTATION_SPEED + offset;
   const jitter = amplitude.getLevel();
+  // const jitter = flashEffect.value * 4;
   const baseLevel = transition.value * 0.1;
   const level = baseLevel + 1;
   const baseRadius = RADIUS * level;
@@ -256,13 +263,15 @@ function arcs() {
 }
 
 function grid() {
-  const n = 20;
+  const n = 10;
   const r = RADIUS / 2;
   const [startX, startY] = [-r, -r];
+  const diff = 2 * r / n;
   const step = 2 * r / 3;
-  const size = r / 2;
+  const size = r / 2.5 + flashEffect.value * 10;
   const selected = int(current / 100) % 16;
   const xx = int(selected / 4);
+  const yy = selected % 4;
 
   push();
   if (selected === 15 && !piRot.isPlaying()) {
@@ -271,21 +280,32 @@ function grid() {
   rotate(gridAngle.value);
   randomSeed(0);
   stroke(255);
-  strokeWeight(5);
-  strokeCap(ROUND)
+  strokeWeight(3);
+  strokeCap(ROUND);
   noFill();
 
   // TODO: make generator
   for (let i = 0; i < 4; i++) {
     const x = startX + i * step;
+    for (let j = 0; j < 4; j++) {
+      const y = startY + j * step;
+      if (i === 0 && yy >= j) {
+        beginShape();
+        for (let k = 0; k <= n; k++) {
+          curveVertex(
+            y + transition.value * 10 * random([-1, 1]) * random(pool).value,
+            startY + diff * k,
+          )
+        }
+        endShape();
+      }
+    }
     if (xx >= i) {
       beginShape();
-      const diff = 4 * r / n;
-      for (let k = 0; k < n; k++) {
-        const tw = random(pool);
-        vertex(
-          -2 * r + diff * k,
-          x + transition.value * 20 * random([-1, 1]) * tw.value
+      for (let k = 0; k <= n; k++) {
+        curveVertex(
+          startX + diff * k,
+          x + transition.value * 10 * random([-1, 1]) * random(pool).value
         )
       }
       endShape();
@@ -319,11 +339,11 @@ function draw() {
   // update globals
   TWEEN.update();
   current = millis() * slow;
-  offset += slowMotion ? 0 : flashEffect.value / 200;
+  offset += slowMotion ? 0 : (1  - flashEffect.value) / 100;
   fft.analyze();
   peakDetect.update(fft);
   if (peakDetect.isDetected) {
-    flashEffect.value = 1;
+    flashEffect.value = 0;
     flash.stop().start();
   }
 
@@ -345,11 +365,11 @@ function switchEffect(dir=1) {
 function keyPressed() {
   if (keyCode === LEFT_ARROW) {
     switchEffect(-1);
-    return true;
+    return false;
   }
   if (keyCode === RIGHT_ARROW) {
     switchEffect(1);
-    return true;
+    return false;
   }
   if (keyCode === 32) {
     slowMotion = !slowMotion;
