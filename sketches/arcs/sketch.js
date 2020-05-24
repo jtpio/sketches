@@ -77,7 +77,7 @@ function windowResized() {
 }
 
 function bg() {
-  return 30 * (1 - flashEffect.value);
+  return 50 * (1 - flashEffect.value);
 }
 
 
@@ -206,7 +206,7 @@ function lines() {
     // const factor = pool[i].value;
     const factor = sin(current * 0.002 + random(N_LINES));
     const x1 = i * space;
-    const y1 = - height * factor;
+    const y1 = - height - radius + height * factor;
     const x2 = x1;
     const y2 = -y1;
     stroke(c);
@@ -268,7 +268,7 @@ function grid() {
   const [startX, startY] = [-r, -r];
   const diff = 2 * r / n;
   const step = 2 * r / 3;
-  const size = r / 2.5 + flashEffect.value * 10;
+  const size = r / 4 + flashEffect.value * 10;
   const selected = int(current / 100) % 16;
   const xx = int(selected / 4);
   const yy = selected % 4;
@@ -363,6 +363,11 @@ function switchEffect(dir=1) {
 }
 
 function keyPressed() {
+  if (keyCode === DOWN_ARROW) {
+    randomSeed();
+    currentEffect = floor(random(effects.length));
+    return false;
+  }
   if (keyCode === LEFT_ARROW) {
     switchEffect(-1);
     return false;
