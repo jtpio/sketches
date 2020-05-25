@@ -136,8 +136,25 @@ function squares() {
     halfSquare(halfDiag);
     pop();
   }
-
 }
+
+function longLines(tw) {
+  tw = 1 - tw;
+  const len = RADIUS * 2;
+  const space = 10 * tw;
+
+  stroke(255);
+  strokeWeight(5 * tw);
+  push();
+  rotate(QUARTER_PI);
+  line(-len, space, len, space);
+  line(-len, -space, len, -space);
+  rotate(HALF_PI);
+  line(-len, space, len, space);
+  line(-len, -space, len, -space);
+  pop();
+}
+
 
 function redCross(r) {
   beginShape();
@@ -165,14 +182,17 @@ function crosses() {
   }
 
   const angle = a * QUARTER_PI;
-  randomSeed();
+  // TODO: fixed this so it's now based on the tween duration
+  const dir = current % 5000 < 2500 ? 1 : -1;
 
   // big cross
   push();
-  noFill();
+  rotate(dir * angle);
+  longLines(b);
+
   stroke(255, 0, 0);
   strokeWeight(4);
-  rotate(random([-1, 1]) * angle);
+  fill(bg());
   redCross(r + flashEffect.value * 20);
   pop();
 
@@ -184,7 +204,7 @@ function crosses() {
   push();
   noStroke();
   fill(255, 0, 0);
-  rotate(random([-1, -1]) * angle);
+  rotate(-dir * angle);
   redCross(sr + flashEffect.value * 20);
   pop();
 }
@@ -353,7 +373,7 @@ function draw() {
   scale(ratio);
   randomSeed(0);
 
-  effects = [grid, crosses, lines, squares, arcs];
+  effects = [crosses, grid, lines, squares, arcs];
   effects[currentEffect % effects.length]();
   // noLoop();
 }
